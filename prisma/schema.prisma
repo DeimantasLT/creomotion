@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// UserRole enum matching the TypeScript type
+enum UserRole {
+  ADMIN
+  EDITOR
+  CLIENT
+}
+
+// ProjectStatus enum
+enum ProjectStatus {
+  DRAFT
+  IN_PROGRESS
+  REVIEW
+  APPROVED
+  COMPLETED
+}
+
+// InvoiceStatus enum
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+}
+
+// CommentType enum
+enum CommentType {
+  GENERAL
+  FEEDBACK
+  REVISION
+  APPROVAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         UserRole
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  timeEntries TimeEntry[]
+  comments    Comment[]
+
+  @@map("users")
+}
+
+model Client {
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  company             String?
+  phone               String?
+  portalToken         String?   @map("portal_token")
+  portalTokenExpires  DateTime? @map("portal_token_expires")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  projects  Project[]
+  invoices  Invoice[]
+  comments  Comment[]
+
+  @@map("clients")
+}
+
+enum DeliverableStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Deliverable {
+  id            String            @id @default(cuid())
+  name          String
+  description   String?
+  projectId     String            @map("project_id")
+  status        DeliverableStatus @default(DRAFT)
+  version       Int               @default(1)
+  fileUrl       String?           @map("file_url")
+  thumbnailUrl  String?           @map("thumbnail_url")
+  fileSize      Int?              @map("file_size")
+  mimeType      String?           @map("mime_type")
+  googleDriveId String?           @map("google_drive_id")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments Comment[]
+
+  @@map("deliverables")
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  clientId    String        @map("client_id")
+  status      ProjectStatus
+  budget      Float?
+  deadline    DateTime?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  timeEntries  TimeEntry[]
+  invoices     Invoice[]
+  deliverables Deliverable[]
+  comments     Comment[]
+
+  @@map("projects")
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  projectId   String   @map("project_id")
+  description String?
+  duration    Int      // Duration in minutes
+  date        DateTime
+  billable    Boolean  @default(false)
+  hourlyRate  Float?   @map("hourly_rate")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  projectId String        @map("project_id")
+  clientId  String        @map("client_id")
+  amount    Float
+  status    InvoiceStatus @default(DRAFT)
+  dueDate   DateTime?     @map("due_date")
+  paidAt    DateTime?     @map("paid_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client    Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lineItems InvoiceLineItem[]
+  comments  Comment[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String  @map("invoice_id")
+  description String
+  quantity    Float
+  unitPrice   Float   @map("unit_price")
+  total       Float
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+model GoogleDriveToken {
+  id           String   @id @default(cuid())
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  scope        String
+  email        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("google_drive_tokens")
+}
+
+model Comment {
+  id            String      @id @default(cuid())
+  content       String
+  type          CommentType @default(GENERAL)
+  
+  // Optional relations - a comment can be on a project, deliverable, invoice, or general
+  projectId     String?     @map("project_id")
+  deliverableId String?     @map("deliverable_id")
+  invoiceId     String?     @map("invoice_id")
+  
+  // Who made the comment
+  userId        String?     @map("user_id")
+  clientId      String?     @map("client_id")
+  
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deliverable Deliverable? @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  invoice     Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}

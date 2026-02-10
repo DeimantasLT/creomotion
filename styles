@@ -1,0 +1,221 @@
+/* Hero WebGL Section Styles */
+
+.hero-webgl {
+  --hero-bg: #F5F5F0;
+  --hero-accent: #FF2E63;
+  --hero-text: #0A0A0F;
+  --hero-text-secondary: #444;
+  --hero-overlay: #E0E0D5;
+  
+  background-color: var(--hero-bg);
+  color: var(--hero-text);
+}
+
+/* Canvas container optimizations */
+.hero-canvas-container {
+  contain: strict;
+  will-change: transform;
+}
+
+.hero-canvas-container canvas {
+  display: block;
+  touch-action: none;
+}
+
+/* Mobile fallback animations */
+.hero-fallback-mobile {
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(255, 46, 99, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(255, 46, 99, 0.05) 0%, transparent 35%),
+    #F5F5F0;
+}
+
+.hero-particle-dot {
+  will-change: transform;
+  contain: layout style;
+}
+
+/* Brutalist typography effects */
+.hero-typography-bg {
+  perspective: 1000px;
+}
+
+.hero-title-creo,
+.hero-title-motion {
+  font-feature-settings: 'tnum' on, 'lnum' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Particle depth effect - subtle shadow behind text */
+.hero-title-creo {
+  text-shadow: 
+    2px 2px 0px rgba(0, 0, 0, 0.02),
+    4px 4px 0px rgba(0, 0, 0, 0.01);
+}
+
+/* Performance optimizations */
+.hero-webgl * {
+  backface-visibility: hidden;
+}
+
+/* Scroll indicator animation refinement */
+@keyframes scrollIndicator {
+  0% { 
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+/* Button hover states with GPU acceleration */
+.hero-cta-button,
+.hero-showreel-button {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .hero-canvas-container {
+    display: none !important;
+  }
+  
+  .hero-fallback-mobile {
+    display: block !important;
+    background: 
+      radial-gradient(circle at 30% 40%, rgba(255, 46, 99, 0.1) 0%, transparent 50%),
+      #F5F5F0;
+  }
+  
+  .hero-particle-dot {
+    animation: none !important;
+    opacity: 0.3 !important;
+  }
+  
+  .hero-scroll-indicator > div:last-child {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .hero-webgl {
+    --hero-bg: #FFFFFF;
+    --hero-text: #000000;
+    --hero-accent: #CC0033;
+  }
+  
+  .hero-title-creo,
+  .hero-title-motion {
+    color: #DDDDDD !important;
+  }
+}
+
+/* Dark mode support (if user switches) */
+@media (prefers-color-scheme: dark) {
+  .hero-webgl {
+    background-color: #0A0A0F;
+    color: #FFFFFF;
+  }
+  
+  .hero-title-creo,
+  .hero-title-motion {
+    color: #1A1A24 !important;
+  }
+  
+  .hero-headline {
+    color: #FFFFFF !important;
+  }
+  
+  .hero-description {
+    color: #AAA !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .hero-title-creo {
+    font-size: clamp(60px, 16vw, 160px) !important;
+  }
+  
+  .hero-title-motion {
+    font-size: clamp(48px, 12vw, 120px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-webgl {
+    min-height: 100svh;
+  }
+  
+  .hero-title-creo,
+  .hero-title-motion {
+    letter-spacing: -0.02em !important;
+  }
+  
+  .hero-content {
+    padding: 1.5rem !important;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .hero-cta-button,
+  .hero-showreel-button {
+    justify-content: center;
+  }
+  
+  /* Disable complex WebGL on very small devices */
+  @media (max-width: 360px) {
+    .hero-canvas-container {
+      opacity: 0.5;
+    }
+  }
+}
+
+/* Large screens */
+@media (min-width: 1920px) {
+  .hero-title-creo {
+    font-size: 220px !important;
+  }
+  
+  .hero-title-motion {
+    font-size: 180px !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .hero-webgl {
+    min-height: auto;
+    background: white !important;
+  }
+  
+  .hero-canvas-container,
+  .hero-fallback-mobile,
+  .hero-scroll-indicator {
+    display: none !important;
+  }
+  
+  .hero-title-creo,
+  .hero-title-motion {
+    color: #ddd !important;
+  }
+  
+  .hero-content {
+    position: static;
+  }
+}
