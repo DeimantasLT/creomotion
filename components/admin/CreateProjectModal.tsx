@@ -99,16 +99,19 @@ export default function CreateProjectModal({
             className="fixed inset-0 bg-black/50 z-50"
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg bg-white border-2 border-black z-50 overflow-auto md:max-h-[90vh] shadow-brutalist-lg"
-          >
+          {/* Modal Wrapper */}
+          <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg max-h-[90vh] bg-[#141414] border border-white/10 overflow-auto rounded-sm"
+            >
             {/* Header */}
-            <div className="border-b-2 border-black p-4 bg-black sticky top-0 z-10">
+            <div className="border-b border-white/10 p-4 bg-[#0a0a0a] sticky top-0 z-10">
               <div className="flex items-center justify-between">
                 <h2 className="text-white font-display font-bold tracking-wider uppercase">
                   New Project
@@ -116,7 +119,7 @@ export default function CreateProjectModal({
                 <button
                   onClick={handleClose}
                   disabled={submitting}
-                  className="p-1 text-white hover:text-coral transition-colors duration-200 disabled:opacity-50"
+                  className="p-1 text-white/60 hover:text-[#ff006e] transition-colors duration-200 disabled:opacity-50"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -127,7 +130,7 @@ export default function CreateProjectModal({
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Project Name */}
               <div className="form-group">
-                <label htmlFor="project-name" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                <label htmlFor="project-name" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                   Project Name *
                 </label>
                 <input
@@ -138,13 +141,13 @@ export default function CreateProjectModal({
                   placeholder="Enter project name"
                   required
                   disabled={submitting}
-                  className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 disabled:opacity-50"
+                  className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 disabled:opacity-50 placeholder:text-white/30"
                 />
               </div>
 
               {/* Client Selector */}
               <div className="form-group">
-                <label htmlFor="client-select" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                <label htmlFor="client-select" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                   Client *
                 </label>
                 <select
@@ -153,11 +156,11 @@ export default function CreateProjectModal({
                   onChange={(e) => setClientId(e.target.value)}
                   required
                   disabled={submitting}
-                  className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 disabled:opacity-50 appearance-none cursor-pointer"
+                  className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 disabled:opacity-50 appearance-none cursor-pointer"
                 >
-                  <option value="">Select a client</option>
+                  <option value="" className="bg-[#1a1a1a]">Select a client</option>
                   {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
+                    <option key={client.id} value={client.id} className="bg-[#1a1a1a]">
                       {client.name} {client.company ? `— ${client.company}` : ''}
                     </option>
                   ))}
@@ -166,7 +169,7 @@ export default function CreateProjectModal({
 
               {/* Status */}
               <div className="form-group">
-                <label htmlFor="status-select" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                <label htmlFor="status-select" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                   Status
                 </label>
                 <select
@@ -174,10 +177,10 @@ export default function CreateProjectModal({
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   disabled={submitting}
-                  className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 disabled:opacity-50 appearance-none cursor-pointer"
+                  className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 disabled:opacity-50 appearance-none cursor-pointer"
                 >
                   {PROJECT_STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>
+                    <option key={s.value} value={s.value} className="bg-[#1a1a1a]">
                       {s.label}
                     </option>
                   ))}
@@ -186,7 +189,7 @@ export default function CreateProjectModal({
 
               {/* Description */}
               <div className="form-group">
-                <label htmlFor="description" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                <label htmlFor="description" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                   Description
                 </label>
                 <textarea
@@ -196,14 +199,14 @@ export default function CreateProjectModal({
                   placeholder="Project description..."
                   rows={3}
                   disabled={submitting}
-                  className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 resize-none disabled:opacity-50"
+                  className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 resize-none disabled:opacity-50 placeholder:text-white/30"
                 />
               </div>
 
               {/* Budget & Deadline Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
-                  <label htmlFor="budget" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                  <label htmlFor="budget" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                     Budget €
                   </label>
                   <input
@@ -215,12 +218,12 @@ export default function CreateProjectModal({
                     min="0"
                     step="100"
                     disabled={submitting}
-                    className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 disabled:opacity-50"
+                    className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 disabled:opacity-50 placeholder:text-white/30"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="deadline" className="block font-mono text-xs text-gray-500 uppercase tracking-wider mb-2">
+                  <label htmlFor="deadline" className="block font-mono text-xs text-white/60 uppercase tracking-wider mb-2">
                     Deadline
                   </label>
                   <input
@@ -229,14 +232,14 @@ export default function CreateProjectModal({
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
                     disabled={submitting}
-                    className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm font-mono outline-none focus:bg-black focus:text-white transition-all duration-200 disabled:opacity-50"
+                    className="w-full border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm font-mono text-white outline-none focus:border-[#ff006e] transition-all duration-200 disabled:opacity-50"
                   />
                 </div>
               </div>
 
               {/* Error Display */}
               {error && (
-                <div className="p-3 border-2 border-black bg-coral text-white animate-fade-in">
+                <div className="p-3 border border-[#ff006e]/30 bg-[#ff006e]/10 text-[#ff006e] animate-fade-in">
                   <p className="text-xs font-mono">[ERROR: {error}]</p>
                 </div>
               )}
@@ -247,14 +250,14 @@ export default function CreateProjectModal({
                   type="button"
                   onClick={handleClose}
                   disabled={submitting}
-                  className="flex-1 border-2 border-black bg-[#F5F5F0] px-4 py-3 font-mono font-bold text-sm uppercase tracking-wider hover:bg-coral hover:text-white hover:border-coral transition-all duration-200 disabled:opacity-50"
+                  className="flex-1 border border-white/10 bg-[#1a1a1a] px-4 py-3 font-mono font-bold text-sm uppercase tracking-wider text-white hover:bg-white/10 hover:border-[#ff006e] hover:text-[#ff006e] transition-all duration-200 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !name.trim() || !clientId}
-                  className="flex-1 border-2 border-black bg-black text-white px-4 py-3 font-mono font-bold text-sm uppercase tracking-wider hover:bg-coral hover:border-coral transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 border border-white/10 bg-white/5 px-4 py-3 font-mono font-bold text-sm uppercase tracking-wider text-white hover:bg-[#ff006e] hover:border-[#ff006e] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -268,7 +271,8 @@ export default function CreateProjectModal({
               </div>
             </form>
           </motion.div>
-        </>
+        </div>
+      </>
       )}
     </AnimatePresence>
   );

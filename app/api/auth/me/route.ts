@@ -24,24 +24,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch current user from database
-    const user = await prisma.user.findUnique({
+    // Try to find user first
+    let user = await prisma.user.findUnique({
       where: { id: payload.userId },
     });
 
+    // If not found, try to find client
+    let client = null;
     if (!user) {
+      client = await prisma.client.findUnique({
+        where: { id: payload.userId },
+      });
+    }
+
+    if (!user && !client) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    // Return user data (excluding passwordHash)
-    const userData = {
+    // Return user data
+    const userData = user ? {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
+    } : {
+      id: client!.id,
+      email: client!.email,
+      name: client!.name,
+      role: 'CLIENT',
     };
 
     return NextResponse.json({ user: userData });

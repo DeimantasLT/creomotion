@@ -108,6 +108,8 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       );
     }
 
+
+
     // Use current user ID from auth token
     const userId = user.userId;
 
@@ -115,6 +117,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       data: {
         userId,
         projectId,
+
         description,
         duration: parseInt(duration.toString()),
         date: new Date(date),
@@ -135,6 +138,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
             name: true,
           },
         },
+
       },
     });
 

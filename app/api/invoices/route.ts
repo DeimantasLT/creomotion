@@ -34,6 +34,11 @@ export const GET = withAuth(async (request: NextRequest, user) => {
             name: true,
             email: true,
             company: true,
+            address: true,
+            city: true,
+            companyCode: true,
+            vatCode: true,
+            phone: true,
           },
         },
         project: {
@@ -68,13 +73,59 @@ export const GET = withAuth(async (request: NextRequest, user) => {
 export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, user) => {
   try {
     const body = await request.json();
-    const { projectId, clientId, amount, status, dueDate, lineItems } = body;
+    const { projectId, clientId, amount, status, invoiceNumber: providedInvoiceNumber, invoiceDate, dueDate, lineItems } = body;
 
     if (!projectId || !clientId || !amount) {
       return NextResponse.json(
         { error: 'projectId, clientId, and amount are required' },
         { status: 400 }
       );
+    }
+
+    // Generate invoice number atomically to prevent race conditions
+    let finalInvoiceNumber = providedInvoiceNumber;
+    if (!finalInvoiceNumber) {
+      finalInvoiceNumber = await prisma.$transaction(async (tx) => {
+        const settings = await tx.invoiceSettings.findFirst();
+        const prefix = settings?.invoicePrefix || 'CM';
+        const nextNum = settings?.nextInvoiceNumber || 1;
+
+        // Find the highest existing invoice number with this prefix
+        const existingInvoices = await tx.invoice.findMany({
+          where: {
+            invoiceNumber: {
+              startsWith: prefix,
+            },
+          },
+          select: {
+            invoiceNumber: true,
+          },
+        });
+
+        let maxNum = nextNum - 1;
+        for (const inv of existingInvoices) {
+          if (inv.invoiceNumber) {
+            const match = inv.invoiceNumber.match(new RegExp(`^${prefix}-(\\d+)$`));
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+        }
+
+        const newNum = maxNum + 1;
+        const generatedNumber = `${prefix}-${String(newNum).padStart(4, '0')}`;
+
+        // Update settings with next number
+        if (settings) {
+          await tx.invoiceSettings.update({
+            where: { id: settings.id },
+            data: { nextInvoiceNumber: newNum + 1 },
+          });
+        }
+
+        return generatedNumber;
+      });
     }
 
     // Verify project exists
@@ -106,18 +157,20 @@ export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, u
       data: {
         projectId,
         clientId,
+        invoiceNumber: finalInvoiceNumber,
         amount: parseFloat(amount.toString()),
         status: status || 'DRAFT',
+        invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
         dueDate: dueDate ? new Date(dueDate) : null,
         lineItems: lineItems && lineItems.length > 0
           ? {
-              create: lineItems.map((item: any) => ({
-                description: item.description,
-                quantity: parseFloat(item.quantity.toString()),
-                unitPrice: parseFloat(item.unitPrice.toString()),
-                total: parseFloat(item.total.toString()),
-              })),
-            }
+            create: lineItems.map((item: any) => ({
+              description: item.description,
+              quantity: parseFloat(item.quantity.toString()),
+              unitPrice: parseFloat(item.unitPrice.toString()),
+              total: parseFloat(item.total.toString()),
+            })),
+          }
           : undefined,
       },
       include: {
@@ -127,6 +180,11 @@ export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, u
             name: true,
             email: true,
             company: true,
+            address: true,
+            city: true,
+            companyCode: true,
+            vatCode: true,
+            phone: true,
           },
         },
         project: {

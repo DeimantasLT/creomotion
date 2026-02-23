@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { verifyPassword, generateToken, COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -15,12 +15,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Query user from database
-    const user = await prisma.user.findUnique({
+    // First try to find a USER
+    let user = await prisma.user.findUnique({
       where: { email },
     });
 
+    let isClient = false;
+    let client = null;
+
+    // If no user found, try to find a CLIENT
     if (!user) {
+      client = await prisma.client.findUnique({
+        where: { email },
+      });
+
+      if (client) {
+        isClient = true;
+      }
+    }
+
+    // If neither found, invalid credentials
+    if (!user && !client) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -28,7 +43,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    let isPasswordValid = false;
+
+    if (user) {
+      isPasswordValid = await verifyPassword(password, user.passwordHash);
+    } else if (client && client.passwordHash) {
+      isPasswordValid = await verifyPassword(password, client.passwordHash);
+    }
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -38,18 +59,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate JWT token
-    const token = generateToken({
+    const tokenData = user ? {
       userId: user.id,
       email: user.email,
       role: user.role,
-    });
+    } : {
+      userId: client!.id,
+      email: client!.email,
+      role: 'CLIENT' as const,
+    };
 
-    // Return user data (excluding passwordHash)
-    const userData = {
+    const token = generateToken(tokenData);
+
+    // Return user data
+    const userData = user ? {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
+    } : {
+      id: client!.id,
+      email: client!.email,
+      name: client!.name,
+      role: 'CLIENT',
     };
 
     const response = NextResponse.json({ user: userData });

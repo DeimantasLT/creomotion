@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Clock, Euro, FileText, TrendingUp, Calendar } from 'lucide-react';
+import { Briefcase, Clock, Euro, FileText, TrendingUp, Calendar, Zap } from 'lucide-react';
 
 interface Stats {
   activeProjects: number;
@@ -18,6 +18,14 @@ interface StatsCardsProps {
   refreshTrigger?: number;
   detailed?: boolean;
 }
+
+const PALETTE = {
+  pink: "#ff006e",
+  purple: "#8338ec",
+  blue: "#3a86ff",
+  yellow: "#ffbe0b",
+  green: "#22c55e",
+};
 
 export default function StatsCards({ refreshTrigger = 0, detailed = false }: StatsCardsProps) {
   const [stats, setStats] = useState<Stats>({
@@ -138,32 +146,36 @@ export default function StatsCards({ refreshTrigger = 0, detailed = false }: Sta
         label: 'ACTIVE PROJECTS',
         value: stats.activeProjects.toString(),
         icon: Briefcase,
-        color: '#000000',
-        bgColor: '#FFFFFF',
+        color: PALETTE.purple,
+        bgColor: '#141414',
+        description: 'In progress',
       },
       {
         id: 'hours',
         label: 'HOURS THIS WEEK',
         value: `${stats.hoursThisWeek}h`,
         icon: Clock,
-        color: '#FF2E63',
-        bgColor: '#FFFFFF',
+        color: PALETTE.pink,
+        bgColor: '#141414',
+        description: 'Tracked time',
       },
       {
         id: 'outstanding',
         label: 'OUTSTANDING INV.',
         value: `€${stats.outstandingInvoices.toLocaleString()}`,
         icon: FileText,
-        color: '#000000',
-        bgColor: '#FFFFFF',
+        color: PALETTE.blue,
+        bgColor: '#141414',
+        description: 'Awaiting payment',
       },
       {
         id: 'revenue',
         label: 'MONTHLY REVENUE',
         value: `€${(stats.monthlyRevenue / 1000).toFixed(1)}K`,
         icon: TrendingUp,
-        color: '#FF2E63',
-        bgColor: '#FFFFFF',
+        color: PALETTE.yellow,
+        bgColor: '#141414',
+        description: 'This month',
       },
     ],
     [stats]
@@ -176,24 +188,24 @@ export default function StatsCards({ refreshTrigger = 0, detailed = false }: Sta
         label: 'HOURS TODAY',
         value: `${stats.hoursToday}h`,
         icon: Calendar,
-        color: '#000000',
-        bgColor: '#F5F5F0',
+        color: '#ffffff',
+        bgColor: '#1a1a1a',
       },
       {
         id: 'total-hours',
         label: 'TOTAL HOURS LOGGED',
         value: `${stats.totalHours}h`,
         icon: Clock,
-        color: '#000000',
-        bgColor: '#F5F5F0',
+        color: '#ffffff',
+        bgColor: '#1a1a1a',
       },
       {
         id: 'total-revenue',
         label: 'TOTAL REVENUE',
         value: `€${(stats.totalRevenue / 1000).toFixed(0)}K`,
         icon: Euro,
-        color: '#FF2E63',
-        bgColor: '#F5F5F0',
+        color: PALETTE.pink,
+        bgColor: '#1a1a1a',
       },
     ],
     [stats]
@@ -201,16 +213,20 @@ export default function StatsCards({ refreshTrigger = 0, detailed = false }: Sta
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div
+          <motion.div
             key={i}
-            className="border-2 border-black bg-white p-6 animate-pulse"
-            style={{ boxShadow: '4px 4px 0 0 #000' }}
+            className="border border-white/10 bg-[#141414] p-5 rounded-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
           >
-            <div className="h-4 bg-gray-200 w-3/4 mb-4" />
-            <div className="h-8 bg-gray-200 w-1/2" />
-          </div>
+            <div className="animate-pulse space-y-3">
+              <div className="h-3 bg-white/5 w-1/2 rounded" />
+              <div className="h-8 bg-white/5 w-1/3 rounded" />
+            </div>
+          </motion.div>
         ))}
       </div>
     );
@@ -218,57 +234,85 @@ export default function StatsCards({ refreshTrigger = 0, detailed = false }: Sta
 
   if (error) {
     return (
-      <div
-        className="border-2 border-black bg-[#FF2E63] text-white p-6 mb-8"
-        style={{ boxShadow: '4px 4px 0 0 #000' }}
+      <motion.div 
+        className="border border-white/10 bg-[#ff006e]/10 backdrop-blur-sm text-white p-5 rounded-xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
       >
-        <p className="font-mono text-sm">[ERROR: {error}]</p>
-      </div>
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-[#ff006e] flex items-center gap-2">
+          <span>⚠</span>
+          {error}
+        </p>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {mainCards.map((card, index) => (
           <motion.div
             key={card.id}
-            className="border-2 border-black p-6"
-            style={{
-              backgroundColor: card.bgColor,
-              boxShadow: '4px 4px 0 0 #000',
-            }}
+            className="relative group"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
+            transition={{ duration: 0.5, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p
-                  className="text-xs tracking-[0.2em] text-black/60 mb-2"
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                >
-                  [{card.label}]
-                </p>
-                <span
-                  className="text-3xl font-bold"
-                  style={{
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    color: card.color,
+            {/* Glow effect on hover */}
+            <motion.div
+              className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+              style={{ backgroundColor: `${card.color}10` }}
+            />
+            
+            <div 
+              className="relative border border-white/10 p-5 rounded-xl overflow-hidden"
+              style={{ backgroundColor: card.bgColor }}
+            >
+              {/* Top gradient line */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-px opacity-60"
+                style={{ background: `linear-gradient(90deg, transparent, ${card.color}, transparent)` }}
+              />
+              
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] tracking-[0.2em] text-white/40 mb-1 font-[family-name:var(--font-jetbrains-mono)] uppercase">
+                    {card.label}
+                  </p>
+                  <motion.span
+                    className="text-2xl sm:text-3xl font-bold block"
+                    style={{ color: card.color, fontFamily: 'var(--font-space-grotesk)' }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                  >
+                    {card.value}
+                  </motion.span>
+                  <p className="text-[10px] text-white/30 mt-1 font-[family-name:var(--font-jetbrains-mono)]">
+                    {card.description}
+                  </p>
+                </div>
+                
+                <motion.div
+                  className="p-2.5 rounded-lg flex-shrink-0"
+                  style={{ 
+                    backgroundColor: `${card.color}15`,
+                    border: `1px solid ${card.color}20`,
                   }}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  {card.value}
-                </span>
+                  <card.icon className="w-4 h-4" style={{ color: card.color }} />
+                </motion.div>
               </div>
-              <div
-                className="p-3 border-2 border-black"
-                style={{
-                  backgroundColor: card.color === '#FF2E63' ? '#FF2E63' : '#000',
-                }}
-              >
-                <card.icon className="w-5 h-5 text-white" />
-              </div>
+              
+              {/* Bottom corner accent */}
+              <div 
+                className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full opacity-10 blur-2xl group-hover:opacity-20 transition-opacity"
+                style={{ backgroundColor: card.color }}
+              />
             </div>
           </motion.div>
         ))}
@@ -276,44 +320,43 @@ export default function StatsCards({ refreshTrigger = 0, detailed = false }: Sta
 
       {/* Secondary Stats (only in detailed mode) */}
       {detailed && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {secondaryCards.map((card, index) => (
             <motion.div
               key={card.id}
-              className="border-2 border-black p-4"
-              style={{
-                backgroundColor: card.bgColor,
-                boxShadow: '4px 4px 0 0 #000',
-              }}
+              className="relative group"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: (mainCards.length + index) * 0.1 }}
+              transition={{ duration: 0.5, delay: (mainCards.length + index) * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -2, transition: { duration: 0.2 } }}
             >
-              <div className="flex items-center gap-4">
-                <div
-                  className="p-2 border-2 border-black"
-                  style={{
-                    backgroundColor: card.color === '#FF2E63' ? '#FF2E63' : 'transparent',
+              <div 
+                className="border border-white/10 p-4 rounded-xl flex items-center gap-4"
+                style={{ backgroundColor: card.bgColor }}
+              >
+                <motion.div
+                  className="p-2 rounded-lg"
+                  style={{ 
+                    backgroundColor: card.color === PALETTE.pink ? `${PALETTE.pink}15` : 'transparent',
+                    border: card.color === PALETTE.pink ? `1px solid ${PALETTE.pink}20` : '1px solid rgba(255,255,255,0.1)',
                   }}
+                  whileHover={{ scale: 1.1 }}
                 >
-                  <card.icon
-                    className={`w-4 h-4 ${
-                      card.color === '#FF2E63' ? 'text-white' : 'text-black'
-                    }`}
+                  <card.icon 
+                    className="w-4 h-4" 
+                    style={{ color: card.color === PALETTE.pink ? PALETTE.pink : 'rgba(255,255,255,0.4)' }} 
                   />
-                </div>
+                </motion.div>
+                
                 <div>
-                  <p
-                    className="text-xs tracking-[0.15em] text-black/50"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                  >
+                  <p className="text-[10px] tracking-[0.15em] text-white/40 font-[family-name:var(--font-jetbrains-mono)] uppercase">
                     {card.label}
                   </p>
                   <span
-                    className="text-xl font-bold"
-                    style={{
-                      fontFamily: "'Space Grotesk', sans-serif",
+                    className="text-lg font-bold"
+                    style={{ 
                       color: card.color,
+                      fontFamily: 'var(--font-space-grotesk)',
                     }}
                   >
                     {card.value}

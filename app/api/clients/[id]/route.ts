@@ -66,7 +66,7 @@ export const PUT = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, us
     const id = pathParts[pathParts.length - 1];
 
     const body = await request.json();
-    const { name, email, company, phone } = body;
+    const { name, email, company, phone, address, city, companyCode, vatCode } = body;
 
     // Check if client exists
     const existingClient = await prisma.client.findUnique({
@@ -104,6 +104,10 @@ export const PUT = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, us
         ...(email && { email: email.toLowerCase() }),
         ...(company !== undefined && { company }),
         ...(phone !== undefined && { phone }),
+        ...(address !== undefined && { address }),
+        ...(city !== undefined && { city }),
+        ...(companyCode !== undefined && { companyCode }),
+        ...(vatCode !== undefined && { vatCode }),
       },
       include: {
         _count: {

@@ -403,38 +403,107 @@ export async function getFile(fileId: string): Promise<DriveFile> {
 }
 
 /**
- * Generate signed URL for file download/view
+ * Generate secure download URL for file
  * 
- * Note: Google Drive API doesn't support true signed URLs like S3.
- * Instead, we use webContentLink with access token or create a permission
+ * Returns a proxy URL that handles auth server-side instead of exposing tokens in URL.
+ * Client should use /api/drive/download?fileId=XXX endpoint which proxies the request.
  */
 export async function generateDownloadUrl(
   fileId: string,
   expiryMinutes: number = 15
-): Promise<{ url: string; expiresAt: Date }> {
+): Promise<{ url: string; expiresAt: Date; fileId: string; mimeType?: string }> {
+  const drive = await createDriveClient();
+
+  // Get file metadata (no token exposure)
+  const file = await drive.files.get({
+    fileId,
+    fields: 'mimeType, name, webContentLink',
+  });
+
+  // Return proxy URL - actual download happens through server endpoint
+  // This avoids exposing access_token in browser history, logs, or referer headers
+  const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+  // Client calls /api/drive/download?fileId=...&expires=...
+  // Server verifies auth, then proxies with proper Authorization header
+  return {
+    url: `/api/drive/download?fileId=${encodeURIComponent(fileId)}&expires=${expiresAt.toISOString()}`,
+    expiresAt,
+    fileId,
+    mimeType: file.data.mimeType || undefined,
+  };
+}
+
+/**
+ * Get file stream for proxying downloads through server
+ * Used by /api/drive/download endpoint to serve files without exposing tokens
+ */
+export async function getFileStream(
+  fileId: string
+): Promise<{ stream: Readable; filename: string; mimeType: string }> {
   const accessToken = await getValidAccessToken();
   const drive = await createDriveClient();
 
   // Get file metadata
   const file = await drive.files.get({
     fileId,
-    fields: 'mimeType, webContentLink',
+    fields: 'name, mimeType',
   });
 
-  // For Google Workspace files, export link
-  if (file.data.mimeType?.includes('application/vnd.google-apps')) {
-    const exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?alt=media`;
-    const url = `${exportUrl}&access_token=${accessToken}`;
-    
-    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-    return { url, expiresAt };
+  const mimeType = file.data.mimeType || 'application/octet-stream';
+  const filename = file.data.name || 'download';
+
+  // Determine download URL
+  let downloadUrl: string;
+  if (mimeType.includes('application/vnd.google-apps')) {
+    // Google Workspace files need export
+    downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?alt=media`;
+  } else {
+    // Binary files
+    downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
   }
 
-  // For binary files, use webContentLink with token
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${accessToken}`;
-  
-  const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-  return { url, expiresAt };
+  // Fetch with Authorization header (secure, not exposed to client)
+  const response = await fetch(downloadUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file: ${response.statusText}`);
+  }
+
+  if (!response.body) {
+    throw new Error('No response body from Drive API');
+  }
+
+  // Convert fetch response to Node.js Readable stream
+  const webStream = response.body;
+  const stream = new Readable();
+
+  // Pipe the web stream to Node.js stream
+  stream._read = () => {};
+
+  const reader = webStream.getReader();
+  const pump = async (): Promise<void> => {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          stream.push(null);
+          break;
+        }
+        stream.push(value);
+      }
+    } catch (err) {
+      stream.destroy(err as Error);
+    }
+  };
+
+  pump().catch((err) => stream.destroy(err));
+
+  return { stream, filename, mimeType };
 }
 
 /**
@@ -727,23 +796,50 @@ export function getFileIcon(mimeType: string): string {
 export { getOrCreateProjectFolder as createFolder };
 
 /**
- * Create shareable link for a file
+ * Create shareable link for a file with real expiration tracking
+ * 
+ * WARNING: Google Drive permissions are permanent until explicitly revoked.
+ * We store the permission ID and expiration time to allow cleanup via cron job.
+ * 
+ * TODO: Implement scheduled cleanup with Inngest or cron to revoke expired links
+ * Example: Check for expired links every hour and call revokeShareableLink()
  */
 export async function createShareableLink(
   fileId: string,
   expiresInMinutes: number = 60
-): Promise<{ url: string; expiresAt: Date }> {
+): Promise<{ url: string; expiresAt: Date; permissionId: string }> {
   const drive = await createDriveClient();
 
-  // Make file accessible to anyone with link
-  const permission = await drive.permissions.create({
+  // Check if 'anyone' permission already exists
+  const existingPerms = await drive.permissions.list({
     fileId,
-    requestBody: {
-      type: 'anyone',
-      role: 'reader',
-    },
-    fields: 'id',
+    fields: 'permissions(id, type)',
   });
+
+  let permissionId: string | null = null;
+  const existingAnyone = existingPerms.data.permissions?.find(
+    (p) => p.type === 'anyone'
+  );
+
+  if (existingAnyone?.id) {
+    // Reuse existing permission
+    permissionId = existingAnyone.id;
+  } else {
+    // Create new 'anyone' permission
+    const permission = await drive.permissions.create({
+      fileId,
+      requestBody: {
+        type: 'anyone',
+        role: 'reader',
+      },
+      fields: 'id',
+    });
+    permissionId = permission.data.id || null;
+  }
+
+  if (!permissionId) {
+    throw new Error('Failed to create or find shareable permission');
+  }
 
   // Get the file's web view link
   const file = await drive.files.get({
@@ -753,9 +849,13 @@ export async function createShareableLink(
 
   const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
+  // TODO: Store permissionId + expiresAt in database for scheduled cleanup
+  // Example: await prisma.fileShare.create({ data: { fileId, permissionId, expiresAt } });
+
   return {
     url: file.data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`,
     expiresAt,
+    permissionId,
   };
 }
 

@@ -10,7 +10,6 @@ import {
   Plus,
   Search,
   Pencil,
-  MoreHorizontal,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -42,11 +41,11 @@ interface ProjectListProps {
 }
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
-  DRAFT: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
-  IN_PROGRESS: { bg: 'bg-black', text: 'text-white', border: 'border-black' },
-  REVIEW: { bg: 'bg-[#FFF3E0]', text: 'text-[#FF9800]', border: 'border-[#FF9800]' },
-  APPROVED: { bg: 'bg-[#E8F5E9]', text: 'text-[#4CAF50]', border: 'border-[#4CAF50]' },
-  COMPLETED: { bg: 'bg-[#FF2E63]', text: 'text-white', border: 'border-[#FF2E63]' },
+  DRAFT: { bg: 'bg-white/10', text: 'text-white', border: 'border-white/20' },
+  IN_PROGRESS: { bg: 'bg-[#8338ec]', text: 'text-white', border: 'border-[#8338ec]' },
+  REVIEW: { bg: 'bg-[#ffbe0b]', text: 'text-black', border: 'border-[#ffbe0b]' },
+  APPROVED: { bg: 'bg-[#3a86ff]', text: 'text-white', border: 'border-[#3a86ff]' },
+  COMPLETED: { bg: 'bg-[#ff006e]', text: 'text-white', border: 'border-[#ff006e]' },
 };
 
 export default function ProjectList({
@@ -150,14 +149,11 @@ export default function ProjectList({
 
   const SortableHeader = ({ field, label }: { field: SortField; label: string }) => (
     <th
-      className="p-4 text-left cursor-pointer group"
+      className="p-3 sm:p-4 text-left cursor-pointer group"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-2">
-        <span
-          className="text-xs tracking-[0.2em] text-black/60 group-hover:text-black transition-colors"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
+        <span className="text-xs tracking-[0.2em] text-white/60 group-hover:text-white transition-colors font-[var(--font-jetbrains-mono)] whitespace-nowrap">
           {label}
         </span>
         <SortIcon field={field} />
@@ -167,19 +163,16 @@ export default function ProjectList({
 
   if (loading) {
     return (
-      <div className="border-2 border-black bg-white" style={{ boxShadow: '4px 4px 0 0 #000' }}>
-        <div className="border-b-2 border-black p-4 bg-black">
-          <h2
-            className="text-[#F5F5F0] font-bold tracking-wider"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
+      <div className="border border-white/10 bg-[#141414] rounded-lg overflow-hidden">
+        <div className="border-b border-white/10 p-4 bg-[#0a0a0a]">
+          <h2 className="text-white font-bold tracking-wider font-[var(--font-space-grotesk)]">
             PROJECTS
           </h2>
         </div>
         <div className="p-8">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex gap-4 mb-4 animate-pulse">
-              <div className="h-12 bg-gray-200 flex-1" />
+              <div className="h-12 bg-white/5 rounded flex-1" />
             </div>
           ))}
         </div>
@@ -189,21 +182,15 @@ export default function ProjectList({
 
   if (error) {
     return (
-      <div className="border-2 border-black bg-white" style={{ boxShadow: '4px 4px 0 0 #000' }}>
-        <div className="border-b-2 border-black p-4 bg-black">
-          <h2
-            className="text-[#F5F5F0] font-bold tracking-wider"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
+      <div className="border border-white/10 bg-[#141414] rounded-lg overflow-hidden">
+        <div className="border-b border-white/10 p-4 bg-[#0a0a0a]">
+          <h2 className="text-white font-bold tracking-wider font-[var(--font-space-grotesk)]">
             PROJECTS
           </h2>
         </div>
         <div className="p-8 text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[#FF2E63]" />
-          <p
-            className="text-sm text-black/60"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-[#ff006e]" />
+          <p className="text-sm text-white/60 font-[var(--font-jetbrains-mono)]">
             [ERROR: {error}]
           </p>
         </div>
@@ -214,10 +201,10 @@ export default function ProjectList({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3">
         {/* Search */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             type="text"
             value={searchQuery}
@@ -226,55 +213,51 @@ export default function ProjectList({
               setCurrentPage(1);
             }}
             placeholder="Search projects..."
-            className="w-full border-2 border-black bg-white pl-10 pr-4 py-2 text-sm outline-none focus:bg-black focus:text-white transition-colors"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            className="w-full bg-[#1a1a1a] border border-white/10 text-white pl-10 pr-4 py-2 text-sm outline-none focus:border-white/30 transition-colors placeholder:text-white/30 rounded font-[var(--font-jetbrains-mono)] min-h-[44px]"
           />
         </div>
 
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="border-2 border-black bg-white px-4 py-2 text-sm outline-none focus:bg-black focus:text-white transition-colors"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          <option value="">ALL STATUSES</option>
-          <option value="DRAFT">DRAFT</option>
-          <option value="IN_PROGRESS">IN PROGRESS</option>
-          <option value="REVIEW">REVIEW</option>
-          <option value="APPROVED">APPROVED</option>
-          <option value="COMPLETED">COMPLETED</option>
-        </select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full sm:w-auto bg-[#1a1a1a] border border-white/10 text-white px-4 py-2 text-sm outline-none focus:border-white/30 transition-colors rounded font-[var(--font-jetbrains-mono)] min-h-[44px]"
+          >
+            <option value="">ALL STATUSES</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="IN_PROGRESS">IN PROGRESS</option>
+            <option value="REVIEW">REVIEW</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="COMPLETED">COMPLETED</option>
+          </select>
 
-        {/* Create Button */}
-        <button
-          onClick={onCreate}
-          className="border-2 border-black bg-[#FF2E63] text-white px-4 py-2 font-bold text-sm tracking-wider flex items-center justify-center gap-2 hover:bg-black transition-colors"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          <Plus className="w-4 h-4" />
-          NEW PROJECT
-        </button>
+          {/* Create Button */}
+          <button
+            onClick={onCreate}
+            className="w-full sm:w-auto bg-[#ff006e] text-white px-4 py-2 font-bold text-sm tracking-wider flex items-center justify-center gap-2 hover:bg-[#ff006e]/80 transition-colors rounded font-[var(--font-jetbrains-mono)] min-h-[44px]"
+          >
+            <Plus className="w-4 h-4" />
+            NEW PROJECT
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="border-2 border-black bg-white" style={{ boxShadow: '4px 4px 0 0 #000' }}>
+      {/* Table Container with horizontal scroll */}
+      <div className="border border-white/10 bg-[#141414] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[640px]">
             <thead>
-              <tr className="border-b-2 border-black bg-[#F5F5F0]">
+              <tr className="border-b border-white/10 bg-[#0a0a0a]">
                 <SortableHeader field="name" label="PROJECT" />
                 <SortableHeader field="client" label="CLIENT" />
                 <SortableHeader field="status" label="STATUS" />
                 <SortableHeader field="budget" label="BUDGET" />
-                <th className="p-4 text-left">
-                  <span
-                    className="text-xs tracking-[0.2em] text-black/60"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                  >
+                <th className="p-3 sm:p-4 text-left">
+                  <span className="text-xs tracking-[0.2em] text-white/60 font-[var(--font-jetbrains-mono)]">
                     ACTIONS
                   </span>
                 </th>
@@ -284,11 +267,8 @@ export default function ProjectList({
               {paginatedProjects.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p
-                      className="text-sm text-black/60"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                    >
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-white/20" />
+                    <p className="text-sm text-white/60 font-[var(--font-jetbrains-mono)]">
                       {searchQuery || statusFilter
                         ? 'NO PROJECTS MATCH YOUR SEARCH'
                         : 'NO PROJECTS FOUND'}
@@ -301,59 +281,53 @@ export default function ProjectList({
                   return (
                     <motion.tr
                       key={project.id}
-                      className="border-b border-black/10 hover:bg-black/5"
+                      className="border-b border-white/5 hover:bg-white/5 transition-colors"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                     >
-                      <td className="p-4">
-                        <p
-                          className="font-bold"
-                          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                        >
+                      <td className="p-3 sm:p-4">
+                        <p className="font-bold text-white font-[var(--font-space-grotesk)]">
                           {project.name}
                         </p>
                         {project.description && (
-                          <p
-                            className="text-xs text-black/50 mt-1 truncate max-w-xs"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                          >
+                          <p className="text-xs text-white/50 mt-1 truncate max-w-[200px] font-[var(--font-jetbrains-mono)]">
                             {project.description}
                           </p>
                         )}
                       </td>
-                      <td className="p-4">
-                        <p style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="p-3 sm:p-4">
+                        <p className="text-white/80 font-[var(--font-jetbrains-mono)] text-sm whitespace-nowrap">
                           {project.client?.name || project.clientId}
                         </p>
                         {project.client?.company && (
-                          <p className="text-xs text-black/50">
+                          <p className="text-xs text-white/50 font-[var(--font-jetbrains-mono)]">
                             {project.client.company}
                           </p>
                         )}
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 sm:p-4">
                         <span
-                          className={`inline-block px-3 py-1 text-xs border-2 ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
-                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                          className={`inline-block px-3 py-1 text-xs border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border} rounded font-[var(--font-jetbrains-mono)] whitespace-nowrap`}
                         >
                           {project.status.replace('_', ' ')}
                         </span>
                       </td>
-                      <td className="p-4">
-                        <p style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="p-3 sm:p-4">
+                        <p className="text-white/80 font-[var(--font-jetbrains-mono)] text-sm whitespace-nowrap">
                           {project.budget ? `€${project.budget.toLocaleString()}` : '—'}
                         </p>
                         {project.deadline && (
-                          <p className="text-xs text-black/50">
+                          <p className="text-xs text-white/50 font-[var(--font-jetbrains-mono)]">
                             Due {new Date(project.deadline).toLocaleDateString()}
                           </p>
                         )}
                       </td>
-                      <td className="p-4">
+                      <td className="p-3 sm:p-4">
                         <button
                           onClick={() => onEdit(project)}
-                          className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
+                          className="p-2 border border-white/10 text-white hover:bg-white/10 transition-colors rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          aria-label="Edit project"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -368,11 +342,8 @@ export default function ProjectList({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="border-t-2 border-black p-4 bg-[#F5F5F0] flex items-center justify-between">
-            <span
-              className="text-xs text-black/60"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
+          <div className="border-t border-white/10 p-3 sm:p-4 bg-[#0a0a0a] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-white/60 font-[var(--font-jetbrains-mono)]">
               SHOWING {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredAndSortedProjects.length)} OF{' '}
               {filteredAndSortedProjects.length}
             </span>
@@ -380,20 +351,19 @@ export default function ProjectList({
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 border-2 border-black bg-white hover:bg-black hover:text-white transition-colors disabled:opacity-50"
+                className="p-2 border border-white/10 text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Previous page"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span
-                className="px-4 py-2 border-2 border-black bg-white text-sm"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
-              >
+              <span className="px-3 sm:px-4 py-2 border border-white/10 text-white/80 text-sm font-[var(--font-jetbrains-mono)] min-h-[44px] flex items-center justify-center">
                 {currentPage} / {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 border-2 border-black bg-white hover:bg-black hover:text-white transition-colors disabled:opacity-50"
+                className="p-2 border border-white/10 text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Next page"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth, withRole } from '@/lib/auth';
+import { withAuth, withRole, hashPassword } from '@/lib/auth';
+import { validateBody, createClientSchema } from '@/lib/validation';
 
 // GET /api/clients - List all clients
 export const GET = withAuth(async (request: NextRequest, user) => {
@@ -33,16 +34,18 @@ export const GET = withAuth(async (request: NextRequest, user) => {
 export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, user) => {
   try {
     const body = await request.json();
-    const { name, email, company, phone } = body;
-
-    if (!name || !email) {
+    
+    // Validate with Zod
+    const validation = validateBody(createClientSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Name and email are required' },
+        { error: validation.error },
         { status: 400 }
       );
     }
 
-    // Check if client with email already exists
+    const { name, email, company, phone, address, notes, password } = validation.data;
+
     const existingClient = await prisma.client.findFirst({
       where: { email: email.toLowerCase() },
     });
@@ -54,12 +57,19 @@ export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, u
       );
     }
 
+    let passwordHash = null;
+    if (password && password.trim()) {
+      passwordHash = await hashPassword(password.trim());
+    }
+
     const client = await prisma.client.create({
       data: {
         name,
         email: email.toLowerCase(),
         company,
         phone,
+        address,
+        passwordHash,
       },
     });
 

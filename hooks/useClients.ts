@@ -57,6 +57,11 @@ export function useClients(options: UseClientsOptions = {}) {
     email: string;
     company?: string;
     phone?: string;
+    address?: string;
+    city?: string;
+    companyCode?: string;
+    vatCode?: string;
+    password?: string;
   }) => {
     const response = await fetch('/api/clients', {
       method: 'POST',

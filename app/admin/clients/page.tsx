@@ -1,218 +1,84 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
-import { ClientList } from '@/components/admin';
-import { CreateClientModal, EditClientModal } from '@/components/admin';
+import { Plus, Search } from 'lucide-react';
+import ClientList from '@/components/admin/ClientList';
+import CreateClientModal from '@/components/admin/CreateClientModal';
+import EditClientModal from '@/components/admin/EditClientModal';
 import { useClients } from '@/hooks/useClients';
 import type { Client } from '@/types';
 
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
+export default function AdminClientsPage() {
+  const { clients, loading, refresh } = useClients();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-interface ClientWithCounts extends Client {
-  _count?: {
-    projects: number;
-    invoices: number;
-  };
-}
-
-function withAuth(Component: React.ComponentType) {
-  return function AuthenticatedComponent() {
-    const [user, setUser] = useState<JWTPayload | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const router = useRouter();
-
-    useEffect(() => {
-      const checkAuth = async () => {
-        try {
-          const response = await fetch('/api/auth/me');
-          if (!response.ok) throw new Error('Not authenticated');
-          const data = await response.json();
-          setUser(data.user);
-        } catch {
-          router.push('/login');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      checkAuth();
-    }, [router]);
-
-    if (isLoading) {
-      return (
-        <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-black border-t-[#FF2E63] animate-spin" />
-        </div>
-      );
-    }
-
-    if (!user) return null;
-    return <Component />;
-  };
-}
-
-function AdminSidebar() {
-  const menuItems = [
-    { id: 'dashboard', label: 'DASHBOARD', href: '/admin', icon: '□' },
-    { id: 'projects', label: 'PROJECTS', href: '/admin/projects', icon: '◈' },
-    { id: 'clients', label: 'CLIENTS', href: '/admin/clients', icon: '⊙' },
-    { id: 'time', label: 'TIME', href: '/admin/time-invoicing', icon: '◷' },
-    { id: 'invoices', label: 'INVOICES', href: '/admin/invoices', icon: '⧉' },
-  ];
+  const filteredClients = clients.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.company?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <aside className="w-64 bg-black text-[#F5F5F0] min-h-screen flex flex-col">
-      <div className="p-6 border-b-2 border-[#F5F5F0]/20">
-        <Link href="/" className="text-xl font-bold tracking-tighter" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          <span className="text-[#F5F5F0]">CREO</span>
-          <span className="text-[#FF2E63]">MOTION</span>
-        </Link>
-        <p className="text-xs text-[#F5F5F0]/40 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>ADMIN</p>
-      </div>
-
-      <nav className="flex-1 py-6">
-        {menuItems.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            className={`flex items-center gap-4 px-6 py-4 transition-colors ${
-              item.id === 'clients' ? 'bg-[#FF2E63] text-white' : 'hover:bg-[#F5F5F0]/10 text-[#F5F5F0]/80'
-            }`}
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span className="text-sm tracking-wider">{item.label}</span>
-          </Link>
-        ))}
-      </nav>
-
-      <div className="p-6 border-t-2 border-[#F5F5F0]/20">
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Clients</h1>
+          <p className="text-slate-400 mt-1">Manage your clients and contacts</p>
+        </div>
         <button
-          onClick={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            window.location.href = '/login';
-          }}
-          className="w-full py-3 border-2 border-[#F5F5F0]/20 text-sm tracking-wider hover:bg-[#FF2E63] hover:border-[#FF2E63] transition-colors"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
         >
-          LOGOUT
+          <Plus className="w-5 h-5" />
+          Add Client
         </button>
       </div>
-    </aside>
-  );
-}
 
-function ClientsPageContent() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<ClientWithCounts | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const {
-    clients,
-    loading,
-    error,
-    createClient,
-    updateClient,
-    deleteClient,
-  } = useClients({ refreshTrigger });
-
-  const handleRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
-
-  const handleCreate = async (data: {
-    name: string;
-    email: string;
-    company: string;
-    phone: string;
-  }) => {
-    await createClient(data);
-    handleRefresh();
-  };
-
-  const handleEdit = (client: ClientWithCounts) => {
-    setEditingClient(client);
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdate = async (
-    id: string,
-    data: {
-      name?: string;
-      email?: string;
-      company?: string;
-      phone?: string;
-    }
-  ) => {
-    await updateClient(id, data);
-    handleRefresh();
-  };
-
-  const handleDelete = async (id: string) => {
-    await deleteClient(id);
-    handleRefresh();
-  };
-
-  return (
-    <div className="min-h-screen bg-[#F5F5F0] flex">
-      <CreateClientModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreate}
-      />
-
-      <EditClientModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingClient(null);
-        }}
-        onSubmit={handleUpdate}
-        onDelete={handleDelete}
-        client={editingClient}
-      />
-
-      <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <motion.div className="mb-8 flex items-center justify-between" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <div>
-            <p className="text-xs tracking-[0.2em] text-[#FF2E63] mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              [CLIENTS]
-            </p>
-            <h1 className="text-4xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ALL CLIENTS
-            </h1>
-          </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="border-2 border-black bg-[#FF2E63] text-white px-4 py-2 font-bold text-sm tracking-wider flex items-center gap-2 hover:bg-black transition-colors"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
-            <Plus className="w-4 h-4" />
-            NEW CLIENT
-          </button>
-        </motion.div>
-
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <ClientList
-            clients={clients}
-            loading={loading}
-            error={error}
-            onEdit={handleEdit}
-            onCreate={() => setIsCreateModalOpen(true)}
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search clients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
           />
-        </motion.section>
-      </main>
+        </div>
+      </div>
+
+      {/* Client List */}
+      <ClientList 
+        clients={filteredClients} 
+        onEdit={setEditingClient} 
+      />
+
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateClientModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            refresh();
+          }}
+        />
+      )}
+
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          onClose={() => setEditingClient(null)}
+          onSuccess={() => {
+            setEditingClient(null);
+            refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
-
-export default withAuth(ClientsPageContent);

@@ -10,6 +10,9 @@ RUN npm ci
 # Copy prisma schema
 COPY prisma ./prisma/
 
+# Copy all source code
+COPY . .
+
 # Expose port
 EXPOSE 3000
 

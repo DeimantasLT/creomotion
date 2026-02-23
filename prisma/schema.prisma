@@ -37,6 +37,24 @@ enum CommentType {
   FEEDBACK
   REVISION
   APPROVAL
+  TIMELINE // For video timeline comments
+}
+
+// Approval status enum
+enum ApprovalStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+// Annotation type enum
+enum AnnotationType {
+  RECTANGLE
+  CIRCLE
+  ARROW
+  FREEHAND
+  PIN
 }
 
 model User {
@@ -61,6 +79,11 @@ model Client {
   email               String    @unique
   company             String?
   phone               String?
+  address             String?   // Adresas
+  city                String?   // Miestas
+  passwordHash        String?   @map("password_hash")  // Slaptažodis client portalui
+  companyCode         String?   @map("company_code")   // Įmonės kodas
+  vatCode             String?   @map("vat_code")       // PVM kodas
   portalToken         String?   @map("portal_token")
   portalTokenExpires  DateTime? @map("portal_token_expires")
   createdAt           DateTime  @default(now()) @map("created_at")
@@ -95,8 +118,12 @@ model Deliverable {
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
-  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  comments Comment[]
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  versions     DeliverableVersion[]
+  annotations  Annotation[]
+  approvals    Approval[]
+  timelineComments TimelineComment[]
 
   @@map("deliverables")
 }
@@ -117,6 +144,7 @@ model Project {
   invoices     Invoice[]
   deliverables Deliverable[]
   comments     Comment[]
+  tasks        Task[]        // Project tasks/milestones
 
   @@map("projects")
 }
@@ -125,8 +153,9 @@ model TimeEntry {
   id          String   @id @default(cuid())
   userId      String   @map("user_id")
   projectId   String   @map("project_id")
+  taskId      String?  @map("task_id")  // Optional: track time per task
   description String?
-  duration    Int      // Duration in minutes
+  duration    Int      // Duration in seconds
   date        DateTime
   billable    Boolean  @default(false)
   hourlyRate  Float?   @map("hourly_rate")
@@ -134,19 +163,23 @@ model TimeEntry {
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task    Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
+  @@index([taskId])
   @@map("time_entries")
 }
 
 model Invoice {
-  id        String        @id @default(cuid())
-  projectId String        @map("project_id")
-  clientId  String        @map("client_id")
-  amount    Float
-  status    InvoiceStatus @default(DRAFT)
-  dueDate   DateTime?     @map("due_date")
-  paidAt    DateTime?     @map("paid_at")
-  createdAt DateTime      @default(now()) @map("created_at")
+  id            String        @id @default(cuid())
+  invoiceNumber String?       @map("invoice_number")
+  projectId     String        @map("project_id")
+  clientId      String        @map("client_id")
+  amount        Float
+  status        InvoiceStatus @default(DRAFT)
+  invoiceDate   DateTime      @default(now()) @map("invoice_date")
+  dueDate       DateTime?     @map("due_date")
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
 
   // Relations
   project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -209,4 +242,175 @@ model Comment {
   client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@map("comments")
+}
+
+// Invoice Settings - Company configuration for invoices
+model InvoiceSettings {
+  id                     String   @id @default(cuid())
+  companyName            String   @map("company_name")
+  companyAddress         String   @map("company_address")
+  companyCity            String   @map("company_city")
+  companyCountry         String   @default("Lithuania") @map("company_country")
+  companyCode            String?  @map("company_code")      // Įmonės kodas / Individualios veiklos numeris
+  vatNumber              String?  @map("vat_number")        // PVM kodas (jei mokėtojas)
+  isVatPayer             Boolean  @default(false) @map("is_vat_payer") // Ar PVM mokėtojas
+  vatRate                Float    @default(21) @map("vat_rate") // PVM tarifas %
+  email                  String
+  phone                  String?
+  website                String?
+  bankName               String?  @map("bank_name")         // Banko pavadinimas
+  bankAccount            String?  @map("bank_account")      // sąskaitos numeris
+  bankIban               String?  @map("bank_iban")         // IBAN
+  bankSwift              String?  @map("bank_swift")        // SWIFT/BIC kodas
+  invoicePrefix          String   @default("CM") @map("invoice_prefix") // Serijos pradžia (CM)
+  nextInvoiceNumber      Int      @default(1) @map("next_invoice_number") // Kitas numeris
+  defaultLanguage        String   @default("lt") @map("default_language") // lt arba en
+  defaultDueDays         Int      @default(14) @map("default_due_days") // Mokėjimo terminas dienomis
+  defaultNotes           String?  @map("default_notes")      // Numatytos pastabos
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("invoice_settings")
+}
+enum ContentType {
+  SECTION
+  TEXT
+  IMAGE
+  VIDEO
+  ARRAY
+}
+
+model ContentSection {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  type      ContentType
+  data      Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@map("content_sections")
+}
+
+// Timeline Comment for Video Review (Frame.io style)
+model TimelineComment {
+  id            String   @id @default(cuid())
+  content       String
+  timestamp     Float    // Video timestamp in seconds
+  deliverableId String   @map("deliverable_id")
+  authorId      String   @map("author_id")
+  authorType    String   @map("author_type") // CLIENT or USER
+  resolved      Boolean  @default(false)
+  parentId      String?  @map("parent_id") // For replies
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  deliverable   Deliverable       @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  replies       TimelineComment[] @relation("CommentReplies")
+  parent        TimelineComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+
+  @@index([deliverableId, timestamp])
+  @@index([resolved])
+  @@map("timeline_comments")
+}
+
+// Video Annotation (drawings on video)
+model Annotation {
+  id            String        @id @default(cuid())
+  type          AnnotationType // rectangle, circle, arrow, freehand, pin
+  color         String
+  coordinates   Json          // Store coordinates as JSON
+  timestamp     Float         // Video timestamp
+  comment       String?
+  deliverableId String        @map("deliverable_id")
+  authorId      String        @map("author_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@index([deliverableId, timestamp])
+  @@map("annotations")
+}
+
+// Approval Status for Deliverables
+model Approval {
+  id            String         @id @default(cuid())
+  status        ApprovalStatus @default(PENDING)
+  notes         String?
+  versionId     String         @map("version_id")
+  deliverableId String         @map("deliverable_id")
+  approverId    String         @map("approver_id")
+  approverType  String         @map("approver_type") // CLIENT or USER
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@index([deliverableId])
+  @@index([status])
+  @@map("approvals")
+}
+
+// Task Status for Project Management
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  BLOCKED
+}
+
+// Task Category for organizing work phases
+enum TaskCategory {
+  PRE_PRODUCTION    // Prieš produkciją
+  SHOOTING          // Filmavimas
+  EDITING           // Montažas
+  MOTION_GRAPHICS   // Motion graphics/2D/3D
+  COLOR             // Spalvų koregavimas
+  SOUND             // Garso dizainas
+  VFX               // VFX efektai
+  DELIVERY          // Finalinis pristatymas
+  REVISION          // Korekcijos
+  OTHER             // Kita
+}
+
+// Project Task - granular work items
+model Task {
+  id              String      @id @default(cuid())
+  projectId       String      @map("project_id")
+  name            String
+  description     String?
+  category        TaskCategory @default(OTHER)
+  status          TaskStatus  @default(TODO)
+  order           Int         @default(0) // Rūšiavimui
+  
+  // Time tracking
+  estimatedHours  Int?        @map("estimated_hours") // Planuotos valandos
+  
+  // Relations
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries     TimeEntry[] // Time entries linked to this task
+  
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@index([projectId, status])
+  @@index([projectId, category])
+  @@map("tasks")
+}
+
+// Deliverable Version History
+model DeliverableVersion {
+  id           String   @id @default(cuid())
+  versionNumber Int
+  fileUrl      String   @map("file_url")
+  thumbnailUrl String?  @map("thumbnail_url")
+  notes        String?
+  deliverableId String @map("deliverable_id")
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@index([deliverableId])
+  @@map("deliverable_versions")
 }

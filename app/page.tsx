@@ -1,40 +1,20 @@
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
-import {
-  HeroStory,
-  TrustedBy,
-  ServicesParallax,
-  StatsBanner,
-  Testimonials,
-  ContactMinimal,
-} from "@/components/sections";
+// Use named exports from backup components
+import HeroFinal from "@/components/sections/HeroFinal";
+import ServicesParallax from "@/components/sections/ServicesParallax";
+import { ProjectGallery } from "@/components/sections/ProjectGallery";
+import { Testimonials } from "@/components/sections/Testimonials";
+import { TrustedBy } from "@/components/sections/TrustedBy";
+import { ContactMinimal } from "@/components/sections/ContactMinimal";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#F5F5F0]">
-      {/* Navigation */}
-      <Navigation />
-
-      {/* Hero Section - Progressive Story Experience */}
-      <HeroStory />
-
-      {/* Trusted By / Client Logos */}
+    <main className="relative bg-[#0a0a0a]">
+      <HeroFinal />
       <TrustedBy />
-
-      {/* Stats/Expertise Banner - Repeating Text Parallax */}
-      <StatsBanner />
-
-      {/* Services Section - Numbered List with 3-Layer Parallax */}
       <ServicesParallax />
-
-      {/* Testimonials Section - Cards with Avatars */}
+      <ProjectGallery />
       <Testimonials />
-
-      {/* Contact Section - Minimal Design */}
       <ContactMinimal />
-
-      {/* Footer */}
-      <Footer />
     </main>
   );
 }

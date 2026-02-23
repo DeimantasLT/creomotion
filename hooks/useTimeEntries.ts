@@ -138,15 +138,15 @@ export function useTimeEntries(options: UseTimeEntriesOptions = {}) {
   }, [timeEntries]);
 
   const calculateTotalHours = useCallback((entries: TimeEntryWithRelations[]) => {
-    const totalSeconds = entries.reduce((sum, entry) => sum + entry.duration, 0);
-    return Math.round((totalSeconds / 3600) * 10) / 10; // Round to 1 decimal
+    const totalMinutes = entries.reduce((sum, entry) => sum + entry.duration, 0);
+    return Math.round((totalMinutes / 60) * 10) / 10; // Duration is in minutes, convert to hours
   }, []);
 
   const calculateTotalBillableHours = useCallback((entries: TimeEntryWithRelations[]) => {
-    const totalSeconds = entries
+    const totalMinutes = entries
       .filter((entry) => entry.billable)
       .reduce((sum, entry) => sum + entry.duration, 0);
-    return Math.round((totalSeconds / 3600) * 10) / 10;
+    return Math.round((totalMinutes / 60) * 10) / 10;
   }, []);
 
   return {

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth, withRole } from '@/lib/auth';
+import { validateBody, createProjectSchema } from '@/lib/validation';
 
 // GET /api/projects - List all projects with client
 export const GET = withAuth(async (request: NextRequest, user) => {
   try {
-    // Build where clause based on user role
     const where: any = {};
     
-    // If CLIENT role, only show their projects
     if (user.role === 'CLIENT') {
-      // Find client record with matching email
       const client = await prisma.client.findFirst({
         where: { email: user.email },
       });
@@ -60,16 +58,18 @@ export const GET = withAuth(async (request: NextRequest, user) => {
 export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, user) => {
   try {
     const body = await request.json();
-    const { name, description, clientId, status, budget, deadline } = body;
-
-    if (!name || !clientId) {
+    
+    // Validate with Zod
+    const validation = validateBody(createProjectSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Name and clientId are required' },
+        { error: validation.error },
         { status: 400 }
       );
     }
 
-    // Verify client exists
+    const { name, description, clientId, status, budget, deadline } = validation.data;
+
     const client = await prisma.client.findUnique({
       where: { id: clientId },
     });
@@ -87,7 +87,7 @@ export const POST = withRole(['ADMIN', 'EDITOR'], async (request: NextRequest, u
         description,
         clientId,
         status: status || 'DRAFT',
-        budget: budget ? parseFloat(budget) : null,
+        budget: budget || null,
         deadline: deadline ? new Date(deadline) : null,
       },
       include: {

@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
+const PALETTE = {
+  pink: "#ff006e",
+  purple: "#8338ec",
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,9 +25,7 @@ export default function LoginPage() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -32,8 +35,12 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Token is set by backend in cookie, redirect to admin
-      router.push('/admin');
+      // Redirect based on role
+      if (data.user.role === 'CLIENT') {
+        router.push('/portal');
+      } else {
+        router.push('/admin');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -42,61 +49,52 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background gradients */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div 
+          className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20 blur-[150px]"
+          style={{ background: `radial-gradient(circle, ${PALETTE.pink}, transparent)` }}
+        />
+        <div 
+          className="absolute -bottom-1/4 -left-1/4 w-[400px] h-[400px] rounded-full opacity-15 blur-[100px]"
+          style={{ background: `radial-gradient(circle, ${PALETTE.purple}, transparent)` }}
+        />
+      </div>
+
       <motion.div
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="text-4xl font-bold tracking-tighter"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
-            <span className="text-black">CREO</span>
-            <span className="text-[#FF2E63]">MOTION</span>
+        <div className="text-center mb-12">
+          <Link href="/" className="text-4xl font-bold tracking-widest">
+            <span className="text-white/80">CREO</span>
+            <span style={{ color: PALETTE.pink }}>MOTION</span>
           </Link>
-          <p
-            className="mt-2 text-sm text-black/60"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
+          <p className="mt-2 text-xs font-mono text-white/40 tracking-[0.3em]">
             ADMIN PORTAL
           </p>
         </div>
 
         {/* Login Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="border-2 border-black bg-white p-8"
-          style={{ boxShadow: '8px 8px 0 0 #000' }}
-        >
-          <p
-            className="text-xs tracking-[0.2em] text-[#FF2E63] mb-6"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
+        <form onSubmit={handleSubmit} className="border border-white/10 bg-white/5 backdrop-blur-sm p-8 rounded-sm">
+          <p className="text-xs font-mono tracking-[0.3em] mb-8" style={{ color: PALETTE.pink }}>
             [AUTHENTICATION REQUIRED]
           </p>
 
           {/* Error Message */}
           {error && (
-            <div
-              className="mb-6 p-4 border-2 border-[#FF2E63] bg-[#FF2E63]/10 text-[#FF2E63]"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
-              <p className="text-sm">{error}</p>
+            <div className="mb-6 p-4 border border-[#ff006e]/30 bg-[#ff006e]/10 text-[#ff006e] font-mono text-sm">
+              {error}
             </div>
           )}
 
           {/* Email Input */}
           <div className="mb-6">
-            <label
-              htmlFor="email"
-              className="block text-xs tracking-[0.2em] mb-2 uppercase"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
+            <label htmlFor="email" className="block text-xs font-mono tracking-widest mb-2 text-white/60">
               EMAIL *
             </label>
             <input
@@ -106,19 +104,14 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
-              className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm outline-none focus:bg-black focus:text-[#F5F5F0] transition-colors duration-200 disabled:opacity-50"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white font-mono text-sm outline-none focus:border-[#ff006e] transition-colors placeholder:text-white/20"
               placeholder="admin@creomotion.com"
             />
           </div>
 
           {/* Password Input */}
           <div className="mb-8">
-            <label
-              htmlFor="password"
-              className="block text-xs tracking-[0.2em] mb-2 uppercase"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
+            <label htmlFor="password" className="block text-xs font-mono tracking-widest mb-2 text-white/60">
               PASSWORD *
             </label>
             <input
@@ -128,8 +121,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              className="w-full border-2 border-black bg-[#F5F5F0] px-4 py-3 text-sm outline-none focus:bg-black focus:text-[#F5F5F0] transition-colors duration-200 disabled:opacity-50"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white font-mono text-sm outline-none focus:border-[#ff006e] transition-colors placeholder:text-white/20"
               placeholder="••••••••"
             />
           </div>
@@ -138,33 +130,31 @@ export default function LoginPage() {
           <motion.button
             type="submit"
             disabled={isLoading}
-            className="w-full border-2 border-black bg-black text-[#F5F5F0] px-8 py-4 font-bold uppercase tracking-wider disabled:opacity-50"
+            className="w-full px-8 py-4 font-bold font-mono text-sm tracking-widest rounded-sm disabled:opacity-50 transition-all"
             style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              boxShadow: '4px 4px 0 0 #FF2E63',
+              background: `linear-gradient(90deg, ${PALETTE.pink}, ${PALETTE.purple})`,
+              color: '#0a0a0a',
             }}
-            whileHover={!isLoading ? {
-              x: -2,
-              y: -2,
-              boxShadow: '6px 6px 0 0 #FF2E63',
-            } : {}}
-            transition={{ duration: 0.2 }}
+            whileHover={!isLoading ? { scale: 1.02 } : {}}
           >
             {isLoading ? 'AUTHENTICATING...' : 'LOGIN →'}
           </motion.button>
         </form>
 
         {/* Back Link */}
-        <div className="mt-6 text-center">
-          <Link
-            href="/"
-            className="text-sm text-black/60 hover:text-[#FF2E63] transition-colors"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          >
+        <div className="mt-8 text-center">
+          <Link href="/" className="text-xs font-mono text-white/30 hover:text-white transition-colors tracking-widest">
             ← BACK TO SITE
           </Link>
         </div>
       </motion.div>
+
+      {/* Footer */}
+      <div className="absolute bottom-8 left-0 right-0 text-center">
+        <p className="text-[10px] font-mono text-white/20 tracking-widest">
+          © 2025 CREOMOTION · SECURE ACCESS
+        </p>
+      </div>
     </div>
   );
 }

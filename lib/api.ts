@@ -1,19 +1,24 @@
 // API Client for Creomotion Platform
 // Fetch wrappers with automatic token handling and error management
 
+import type { 
+  User, Client, Project, ProjectStatus, 
+  Deliverable, DeliverableStatus, 
+  Invoice, InvoiceStatus,
+  ApiResponse, ApiError, TimeEntry, InvoiceLineItem,
+  UserRole, LoginCredentials, JWTPayload, Service, CMSContent
+} from '@/types';
+
+// Re-export all types for backwards compatibility
+export type { 
+  User, Client, Project, ProjectStatus, 
+  Deliverable, DeliverableStatus, 
+  Invoice, InvoiceStatus,
+  ApiResponse, ApiError, TimeEntry, InvoiceLineItem,
+  UserRole, LoginCredentials, JWTPayload, Service, CMSContent
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-
-// Types
-export interface ApiError {
-  error: string;
-  status: number;
-}
-
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  status: number;
-}
 
 // Fetch wrapper with automatic auth header
 async function fetchWithAuth<T>(
@@ -90,16 +95,6 @@ export const authApi = {
   },
 };
 
-// User types
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  role: 'ADMIN' | 'EDITOR' | 'VIEWER';
-  createdAt: string;
-  updatedAt: string;
-}
-
 // Users API
 export const usersApi = {
   list: async () => {
@@ -113,19 +108,6 @@ export const usersApi = {
     });
   },
 };
-
-// Client types
-export interface Client {
-  id: string;
-  email: string;
-  name: string;
-  company: string | null;
-  phone: string | null;
-  address: string | null;
-  createdAt: string;
-  updatedAt: string;
-  _count?: { projects: number };
-}
 
 // Clients API
 export const clientsApi = {
@@ -157,27 +139,6 @@ export const clientsApi = {
     });
   },
 };
-
-// Project types
-export type ProjectStatus = 'DRAFT' | 'IN_PROGRESS' | 'IN_REVIEW' | 'APPROVED' | 'DELIVERED' | 'ARCHIVED' | 'CANCELLED';
-
-export interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  status: ProjectStatus;
-  deadline: string | null;
-  progress: number;
-  clientId: string;
-  client?: Client;
-  createdAt: string;
-  updatedAt: string;
-  _count?: { 
-    deliverables: number;
-    timeEntries: number;
-    invoices: number;
-  };
-}
 
 // Projects API
 export const projectsApi = {
@@ -222,24 +183,6 @@ export const projectsApi = {
   },
 };
 
-// Deliverable types
-export type DeliverableStatus = 'PENDING' | 'IN_PROGRESS' | 'IN_REVIEW' | 'APPROVED' | 'DELIVERED' | 'REJECTED';
-
-export interface Deliverable {
-  id: string;
-  name: string;
-  description: string | null;
-  status: DeliverableStatus;
-  version: number;
-  googleDriveUrl: string | null;
-  googleDriveId: string | null;
-  fileSize: number | null;
-  mimeType: string | null;
-  projectId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // Deliverables API
 export const deliverablesApi = {
   list: async (projectId?: string) => {
@@ -271,23 +214,6 @@ export const deliverablesApi = {
     });
   },
 };
-
-// Invoice types
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'REFUNDED';
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  amount: number;
-  status: InvoiceStatus;
-  pdfUrl: string | null;
-  issuedAt: string | null;
-  dueAt: string | null;
-  paidAt: string | null;
-  projectId: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 // Invoices API
 export const invoicesApi = {
